@@ -111,6 +111,28 @@ async function main() {
             type: 'object',
             properties: {}
           }
+        },
+        {
+          name: 'list_ai_providers',
+          description: 'List all available AI providers and their availability status',
+          inputSchema: {
+            type: 'object',
+            properties: {}
+          }
+        },
+        {
+          name: 'create_template',
+          description: 'Create a new PRD template',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              name: { type: 'string', description: 'Name of the new template' },
+              description: { type: 'string', description: 'Optional description of the template' },
+              content: { type: 'string', description: 'Markdown content of the template' },
+              tags: { type: 'array', items: { type: 'string' }, description: 'Optional tags for the template' }
+            },
+            required: ['name', 'content']
+          }
         }
       ]
     }));

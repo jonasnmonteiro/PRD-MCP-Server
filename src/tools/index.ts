@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { 
   generatePrdSchema, 
   generatePRD, 
+  listAiProviders,
   type GeneratePrdParams 
 } from './prd-generator.js';
 import { 
@@ -13,6 +14,7 @@ import {
   type ValidatePrdParams 
 } from './prd-validator.js';
 import { logger } from '../config/logging.js';
+import { createTemplateSchema, createTemplate } from './template-creator.js';
 
 /**
  * Register all tools with the MCP server
@@ -39,7 +41,10 @@ export function registerTools(server: McpServer) {
           validatedParams.targetAudience,
           validatedParams.coreFeatures,
           validatedParams.constraints,
-          validatedParams.templateName
+          validatedParams.templateName,
+          validatedParams.providerId,
+          validatedParams.additionalContext,
+          validatedParams.providerOptions
         );
         
         return {
@@ -90,6 +95,49 @@ export function registerTools(server: McpServer) {
         logger.error(`Error listing validation rules: ${error instanceof Error ? error.message : String(error)}`);
         return {
           content: [{ type: 'text', text: `Error listing validation rules: ${error instanceof Error ? error.message : 'Unknown error'}` }],
+          isError: true,
+        };
+      }
+    }
+    
+    // Handle list AI providers tool
+    if (name === 'list_ai_providers') {
+      try {
+        const providers = await listAiProviders();
+        
+        return {
+          content: [{ type: 'text', text: JSON.stringify(providers, null, 2) }],
+        };
+      } catch (error) {
+        logger.error(`Error listing AI providers: ${error instanceof Error ? error.message : String(error)}`);
+        return {
+          content: [{ type: 'text', text: `Error listing AI providers: ${error instanceof Error ? error.message : 'Unknown error'}` }],
+          isError: true,
+        };
+      }
+    }
+
+    // Handle Create Template tool
+    if (name === 'create_template') {
+      try {
+        // Validate parameters
+        const validatedParams = createTemplateSchema.parse(args);
+        
+        // Create template
+        const template = await createTemplate(
+          validatedParams.name,
+          validatedParams.description,
+          validatedParams.content,
+          validatedParams.tags
+        );
+        
+        return {
+          content: [{ type: 'text', text: JSON.stringify(template, null, 2) }],
+        };
+      } catch (error) {
+        logger.error(`Error creating template: ${error instanceof Error ? error.message : String(error)}`);
+        return {
+          content: [{ type: 'text', text: `Error creating template: ${error instanceof Error ? error.message : 'Unknown error'}` }],
           isError: true,
         };
       }
