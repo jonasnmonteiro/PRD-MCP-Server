@@ -1,4 +1,15 @@
 import winston from 'winston';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+// Ensure logs directory exists before creating logger transports
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const logsDir = path.join(__dirname, '../../logs');
+if (!fs.existsSync(logsDir)) {
+  fs.mkdirSync(logsDir, { recursive: true });
+}
 
 // Configure logging
 const logger = winston.createLogger({
@@ -24,19 +35,6 @@ const logger = winston.createLogger({
     }),
   ],
 });
-
-// Create a logs directory if it doesn't exist
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const logsDir = path.join(__dirname, '../../logs');
-
-if (!fs.existsSync(logsDir)) {
-  fs.mkdirSync(logsDir, { recursive: true });
-}
 
 export function configureLogging() {
   return logger;

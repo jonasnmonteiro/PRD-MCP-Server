@@ -46,6 +46,14 @@ npm start
 
 The server will run with STDIO transport by default, which makes it compatible with MCP clients.
 
+### Inspecting the server
+
+To inspect the running server with the MCP Inspector UI, run:
+
+```bash
+npx @modelcontextprotocol/inspector node dist/index.js
+```
+
 ### Adding to MCP client configuration
 
 To use the PRD Creator MCP Server with an MCP client (like Claude Desktop or Cursor), add it to your MCP settings:
@@ -62,6 +70,20 @@ For Claude Desktop (on macOS), add to `~/Library/Application Support/Claude/clau
     }
   }
 }
+```
+
+### Docker Usage
+
+Build the Docker image:
+
+```bash
+docker build -t prd-creator-mcp .
+```
+
+Run the container (STDIO mode):
+
+```bash
+docker run --rm prd-creator-mcp
 ```
 
 ### Available Tools
@@ -156,7 +178,11 @@ npm test
 
 ## License
 
-MIT
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Contributing
+
+Please read [CONTRIBUTING.md](CONTRIBUTING.md) and [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) before contributing.
 
 ---
 
