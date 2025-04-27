@@ -1,9 +1,12 @@
 {
   "name": "prd-creator-mcp",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "A Model Context Protocol server for creating Product Requirements Documents",
   "main": "dist/index.js",
   "type": "module",
+  "bin": {
+    "prd-creator-mcp": "dist/index.js"
+  },
   "scripts": {
     "build": "tsc",
     "start": "node dist/index.js",
@@ -22,15 +25,17 @@
   "license": "MIT",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.7.0",
+    "openai": "^4.96.0",
     "sqlite3": "^5.1.6",
     "uuid": "^9.0.0",
     "winston": "^3.8.2",
-    "zod": "^3.21.4"
+    "zod": "^3.21.4",
+    "dotenv": "^16.4.5"
   },
   "devDependencies": {
     "@types/jest": "^29.5.2",
     "@types/node": "^18.16.16",
-   "@types/sqlite3": "^3.1.8",
+    "@types/sqlite3": "^3.1.8",
     "@types/uuid": "^9.0.2",
     "@typescript-eslint/eslint-plugin": "^5.59.11",
     "@typescript-eslint/parser": "^5.59.11",

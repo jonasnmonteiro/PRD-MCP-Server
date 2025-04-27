@@ -39,7 +39,12 @@ Thumbs.db
 data/provider-config.json
 
 # Cursor Memory Bank
-memory-bank/
+memory-bank/activeContext.md
+memory-bank/productContext.md
+memory-bank/progress.md
+memory-bank/techContext.md
+memory-bank/systemPatterns.md
+memory-bank/projectbrief.md
 
 # MCP Inspector
 .mcp-inspector/
@@ -61,3 +66,6 @@ generated-prd.md
 
 # Roo Code Project MCP
 .roo/
+
+
+README_RESTRUCTURE_PROPOSAL.md

@@ -4,17 +4,16 @@
 Integration of a robust, multi-provider AI system for PRD generation.
 
 ## Recent Changes (Major)
--   **AI Provider Abstraction**: Implemented a core abstraction layer (`src/core/ai-providers/`) allowing multiple AI services (OpenAI, Gemini, Anthropic, local, template fallback) to be used for PRD generation.
--   **OpenAI Implementation**: Fully implemented the `OpenAiProvider` using the official Node.js SDK.
--   **Stub Providers**: Created stub implementations for Gemini, Anthropic, and local models as placeholders.
--   **Template Fallback**: Created a `TemplateFallbackProvider` that uses the original template substitution logic.
--   **Provider Management**: Added an `AiProviderManager` to handle provider selection (based on configuration, preference, and availability), caching, and listing.
--   **Configuration**: Added environment variable support (`src/config/ai-providers.ts` and `.env.template`) for configuring API keys, models, and default providers.
--   **Tool Enhancement**: 
-    *   Modified the `generate_prd` tool to accept `providerId`, `additionalContext`, and `providerOptions`.
-    *   Added a new `list_ai_providers` tool.
--   **Dependencies**: Added the `openai` npm package.
--   **Documentation**: Updated `README.md` to reflect the new AI capabilities and configuration.
+-   **Storage Layer Migrations**: Added a `deleted` column to `templates` table and created `validation_rules` and `metrics` tables in the SQLite database.
+-   **Storage Modules**: Introduced `src/storage/validation-rules.ts`, `src/storage/metrics.ts`, and `src/storage/provider-config.ts` for custom rules, usage metrics, and provider configuration.
+-   **Template Management Tools**: Added new MCP tools: `create_template`, `list_templates`, `get_template`, `update_template`, `delete_template`, `export_templates`, and `import_templates`.
+-   **Validation-Rule Management Tools**: Added MCP tools for `list_all_rules`, `add_validation_rule`, `update_validation_rule`, and `delete_validation_rule` to manage custom validation rules at runtime.
+-   **Metrics & Usage Tracking**: Introduced a `stats` tool and instrumented PRD generation (`prd_generated`), AI calls (`ai_calls`), and fallback counts (`fallbacks`), plus template creation, to update the `metrics` table.
+-   **Provider Configuration Management**: Added MCP tools `get_provider_config` and `update_provider_config`, with overrides persisted in `data/provider-config.json` via a new storage module.
+-   **Template Preview**: Added a `render_template` tool for placeholder-only PRD rendering using the existing fallback logic.
+-   **System Diagnostics Tools**: Added `health_check` (database connectivity and AI provider availability) and `get_logs` (tail recent log entries) tools.
+-   **Tool Registration Updates**: Updated `src/tools/index.ts` and the ListTools handler in `src/index.ts` to register and expose all new tools.
+-   **Memory Bank Update**: Reviewed and updated Memory Bank files for accuracy and completeness.
 
 ## Next Steps
 1.  **Implement Stub Providers**: Flesh out the implementations for `GeminiProvider`, `AnthropicProvider`, and `LocalModelProvider` (requires installing respective SDKs/libraries and handling their specific API calls).
@@ -22,7 +21,6 @@ Integration of a robust, multi-provider AI system for PRD generation.
 3.  **Refine Prompts**: Iterate on the system and user prompts used in AI providers (like `OpenAiProvider`) for optimal PRD quality and structure.
 4.  **Error Handling**: Enhance error handling, especially around provider API calls (rate limits, specific API errors).
 5.  **Resource Handling Refactor**: Review and potentially refactor resource handling (`prd://` URIs) for clarity if it wasn't updated during the MVP phase (as noted in `systemPatterns.md`).
-6.  **Memory Bank Refinement**: Review and update all Memory Bank files to ensure accuracy and completeness after these major changes.
 
 ## Active Decisions & Considerations
 -   The current priority is ensuring the core AI provider abstraction works reliably with OpenAI and the template fallback.

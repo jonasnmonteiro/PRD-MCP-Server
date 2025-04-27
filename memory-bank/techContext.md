@@ -6,7 +6,7 @@
 -   **Package Manager**: npm
 -   **Protocol Framework**: `@modelcontextprotocol/sdk`
 -   **Input Validation**: Zod
--   **Database**: SQLite (via `sqlite3`)
+-   **Database**: SQLite (via `better-sqlite3`)
 -   **Logging**: Winston
 -   **AI Provider SDKs**:
     -   `openai` (for OpenAI)
