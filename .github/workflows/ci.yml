@@ -23,7 +23,7 @@ jobs:
       - name: Run tests
         run: npm test
       - name: Inspector connectivity check
-        run: npx @modelcontextprotocol/inspector node dist/index.js && echo "Inspector OK"
+        run: timeout 15s npx @modelcontextprotocol/inspector node dist/index.js && echo "Inspector OK"
       - name: Docker build
         run: docker build -t prd-creator-mcp .
       - name: Security audit
