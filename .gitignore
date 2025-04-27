@@ -38,34 +38,32 @@ Thumbs.db
 # Ignore dynamic provider config overrides
 data/provider-config.json
 
-# Cursor Memory Bank
-memory-bank/activeContext.md
-memory-bank/productContext.md
-memory-bank/progress.md
-memory-bank/techContext.md
-memory-bank/systemPatterns.md
-memory-bank/projectbrief.md
-
 # MCP Inspector
 .mcp-inspector/
 
 # MCP Inspector Cache
 .mcp-inspector/cache/
 
-# Generated PRD
-generated-prd.md
+# Ignore entire memory-bank directory
+/memory-bank/
 
-# Implementation Plan
-prd-creator-implementation-plan.md
+# Ignore specific root-level markdown files (but not README.md)
+/generated-prd.md
+/prd-creator-implementation-plan.md
+/PRD.md
+/README_RESTRUCTURE_PROPOSAL.md
 
-# PRD
-PRD.md
+# Do not ignore the main README
+!/README.md
 
-# Sample PRD Output
-generated-prd.md
+# Do not ignore CHANGELOG.md
+!/CHANGELOG.md
 
-# Roo Code Project MCP
-.roo/
+# Do not ignore CONTRIBUTING.md
+!/CONTRIBUTING.md
 
+# Do not ignore LICENSE
+!/LICENSE
 
-README_RESTRUCTURE_PROPOSAL.md
+# Ignore .roo/
+/.roo/
