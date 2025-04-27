@@ -1,6 +1,9 @@
 import { z } from 'zod';
 import { logger } from '../config/logging.js';
-import { getTemplate } from '../storage/templates.js';
+import { incrementMetric } from '../storage/metrics.js';
+import { AiProviderManager } from '../core/ai-providers/index.js';
+import { AiProviderOptions, PrdGenerationInput } from '../core/ai-providers/provider.js';
+import { getProviderConfigs, getDefaultProviderId } from '../config/ai-providers.js';
 
 /**
  * Input schema for the PRD Generator tool
@@ -12,13 +15,26 @@ export const generatePrdSchema = z.object({
   coreFeatures: z.array(z.string()).min(1, "At least one core feature is required"),
   constraints: z.array(z.string()).optional(),
   templateName: z.string().optional(),
+  // New parameters for AI-driven generation
+  providerId: z.string().optional(),
+  additionalContext: z.string().optional(),
+  providerOptions: z.record(z.any()).optional(),
 });
 
 // Type for the input parameters
 export type GeneratePrdParams = z.infer<typeof generatePrdSchema>;
 
+// Create and cache the provider manager
 /**
- * Generate a PRD from the given parameters
+ * Always loads the latest provider configs from storage/env for hot-reload support.
+ */
+async function getProviderManager(): Promise<AiProviderManager> {
+  const configs = await getProviderConfigs();
+  return new AiProviderManager(configs);
+}
+
+/**
+ * Generate a PRD from the given parameters using an AI provider or template fallback
  * 
  * @param productName - The name of the product
  * @param productDescription - Description of the product
@@ -26,6 +42,9 @@ export type GeneratePrdParams = z.infer<typeof generatePrdSchema>;
  * @param coreFeatures - Array of core features
  * @param constraints - Optional array of constraints
  * @param templateName - Optional template name to use (defaults to 'standard')
+ * @param providerId - Optional specific AI provider to use
+ * @param additionalContext - Optional additional context for the AI
+ * @param providerOptions - Optional provider-specific options
  * @returns The generated PRD as a markdown string
  */
 export async function generatePRD(
@@ -34,45 +53,70 @@ export async function generatePRD(
   targetAudience: string,
   coreFeatures: string[],
   constraints?: string[],
-  templateName: string = 'standard'
+  templateName: string = 'standard',
+  providerId?: string,
+  additionalContext?: string,
+  providerOptions?: Record<string, any>
 ): Promise<string> {
   logger.info(`Generating PRD for "${productName}" using template: ${templateName}`);
   
   try {
-    // Get the template
-    const template = await getTemplate(templateName);
+    // Get the provider manager
+    const manager = await getProviderManager();
     
-    // Simple template variable replacement
-    let content = template.content;
+    // Convert provider options to the expected format
+    const options: AiProviderOptions = {
+      ...(providerOptions || {}),
+    };
     
-    // Replace product name
-    content = content.replace(/\{\{PRODUCT_NAME\}\}/g, productName);
+    // Prepare input for the provider
+    const input: PrdGenerationInput = {
+      productName,
+      productDescription,
+      targetAudience,
+      coreFeatures,
+      constraints,
+      templateName,
+      additionalContext
+    };
     
-    // Replace product description
-    content = content.replace(/\{\{PRODUCT_DESCRIPTION\}\}/g, productDescription);
+    // Check if a specific provider is requested, otherwise use the default or auto-select
+    const preferredProviderId = providerId || getDefaultProviderId();
     
-    // Replace target audience
-    content = content.replace(/\{\{TARGET_AUDIENCE\}\}/g, targetAudience);
+    // Select the provider (with fallback if needed)
+    const provider = await manager.selectProvider(preferredProviderId);
     
-    // Replace features list
-    const featuresContent = coreFeatures.map(feature => `- ${feature}`).join('\n');
-    content = content.replace(/\{\{CORE_FEATURES\}\}/g, featuresContent);
-    
-    // Replace constraints if provided
-    if (constraints && constraints.length > 0) {
-      const constraintsContent = constraints.map(constraint => `- ${constraint}`).join('\n');
-      content = content.replace(/\{\{CONSTRAINTS\}\}/g, constraintsContent);
+    // Metrics: track AI calls or template fallbacks
+    if (provider.id === 'template') {
+      await incrementMetric('fallbacks');
     } else {
-      content = content.replace(/\{\{CONSTRAINTS\}\}/g, 'No specific constraints identified.');
+      await incrementMetric('ai_calls');
     }
     
-    // Replace date
-    content = content.replace(/\{\{DATE\}\}/g, new Date().toLocaleDateString());
+    // Generate PRD using the selected provider
+    const prdContent = await provider.generatePrd(input, options);
     
-    logger.info(`PRD generated successfully for "${productName}"`);
-    return content;
+    // Metrics: count successful PRD generations
+    await incrementMetric('prd_generated');
+    
+    logger.info(`PRD generated successfully for "${productName}" using ${provider.name}`);
+    return prdContent;
   } catch (error) {
     logger.error(`Error generating PRD: ${error instanceof Error ? error.message : String(error)}`);
     throw new Error(`Failed to generate PRD: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+}
+
+/**
+ * List all available AI providers
+ * @returns Array of provider information objects
+ */
+export async function listAiProviders(): Promise<Array<{ id: string, name: string, available: boolean }>> {
+  try {
+    const manager = await getProviderManager();
+    return await manager.listAvailableProviders();
+  } catch (error) {
+    logger.error(`Error listing providers: ${error instanceof Error ? error.message : String(error)}`);
+    return [];
   }
 }

@@ -1,10 +1,57 @@
 # PRD Creator MCP Server
 
+[![Build Status](https://github.com/Saml1211/prd-mcp-server/actions/workflows/ci.yml/badge.svg)](https://github.com/Saml1211/prd-mcp-server/actions/workflows/ci.yml)
+[![npm version](https://img.shields.io/npm/v/prd-creator-mcp)](https://www.npmjs.com/package/prd-creator-mcp)
+[![License: MIT](https://img.shields.io/github/license/Saml1211/prd-mcp-server)](https://github.com/Saml1211/prd-mcp-server/blob/main/LICENSE)
+[![GitHub issues](https://img.shields.io/github/issues/Saml1211/prd-mcp-server)](https://github.com/Saml1211/prd-mcp-server/issues)
+
 A specialized Model Context Protocol (MCP) server dedicated to creating Product Requirements Documents. This MCP server enables AI systems connected to MCP clients to generate detailed, well-structured product requirement documents through a standardized protocol interface.
+
+---
+
+<!-- TOC -->
+- [Quick Start](#quick-start)
+- [Features](#features)
+- [Installation](#installation)
+- [API Reference](#api-reference)
+- [Provider Configuration](#provider-configuration--hot-reload)
+- [Integrations](#integrations)
+- [CLI Usage](#cli-usage)
+- [Docker](#docker)
+- [Contributing](#contributing)
+- [Changelog](#changelog)
+- [Appendix](#appendix)
+<!-- TOC -->
+
+## Quick Start
+
+**Via NPX (recommended):**
+```sh
+npx -y prd-creator-mcp
+```
+
+**Via Docker:**
+```sh
+docker pull saml1211/prd-creator-mcp
+docker run -i --rm saml1211/prd-creator-mcp
+```
+
+**Configure Providers:**
+- Copy `.env.example` to `.env` and set your API keys and preferred models.
+- Optionally, update provider credentials at runtime using the `update_provider_config` MCP tool.
+
+**Get Help:**
+```sh
+npx prd-creator-mcp --help
+```
 
 ## Features
 
 - **PRD Generator**: Create complete PRDs based on product descriptions, user stories, and requirements
+- **AI-Driven Generation**: Generate high-quality PRDs using multiple AI providers
+- **Multi-Provider Support**: Choose from OpenAI, Google Gemini, Anthropic Claude, or local models
+- **Provider Configuration**: Customize provider options for each PRD generation
+- **Fallback Mechanism**: Gracefully falls back to template-based generation when AI is unavailable
 - **PRD Validator**: Validate PRD completeness against industry standards and customizable rule sets
 - **Template Resources**: Access a library of PRD templates for different product types
 - **MCP Protocol Support**: Implements the Model Context Protocol for seamless integration with MCP clients
@@ -20,8 +67,8 @@ A specialized Model Context Protocol (MCP) server dedicated to creating Product 
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/prd-creator-mcp.git
-cd prd-creator-mcp
+git clone https://github.com/Saml1211/prd-mcp-server.git
+cd prd-mcp-server
 ```
 
 2. Install dependencies:
@@ -34,75 +81,36 @@ npm install
 npm run build
 ```
 
-## Usage
-
-### Running the server
-
-Run the server using:
-
+4. Run locally:
 ```bash
 npm start
 ```
 
-The server will run with STDIO transport by default, which makes it compatible with MCP clients.
-
-### Inspecting the server
-
-To inspect the running server with the MCP Inspector UI, run:
-
+5. For development with hot reload:
 ```bash
-npx @modelcontextprotocol/inspector node dist/index.js
+npm run dev
 ```
 
-### Adding to MCP client configuration
+## API Reference
 
-To use the PRD Creator MCP Server with an MCP client (like Claude Desktop or Cursor), add it to your MCP settings:
+The PRD Creator MCP Server provides the following tools:
 
-For Claude Desktop (on macOS), add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
+### `generate_prd`
 
-```json
-{
-  "mcpServers": {
-    "prd-creator": {
-      "command": "node",
-      "args": ["/path/to/prd-creator-mcp/dist/index.js"],
-      "disabled": false
-    }
-  }
-}
-```
+Generate a complete PRD document using AI or template-based generation.
 
-### Docker Usage
-
-Build the Docker image:
-
-```bash
-docker build -t prd-creator-mcp .
-```
-
-Run the container (STDIO mode):
-
-```bash
-docker run --rm prd-creator-mcp
-```
-
-### Available Tools
-
-The server provides the following tools:
-
-#### 1. `generate_prd`
-
-Generate a complete PRD document from a template.
-
-Parameters:
+**Parameters:**
 - `productName`: The name of the product
 - `productDescription`: Description of the product
 - `targetAudience`: Description of the target audience
 - `coreFeatures`: Array of core feature descriptions
 - `constraints` (optional): Array of constraints or limitations
 - `templateName` (optional): Template name to use (defaults to "standard")
+- `providerId` (optional): Specific AI provider to use (openai, anthropic, gemini, local, template)
+- `additionalContext` (optional): Additional context or instructions for the AI provider
+- `providerOptions` (optional): Provider-specific options like temperature, maxTokens, etc.
 
-Example:
+**Example:**
 ```javascript
 {
   "productName": "TaskMaster Pro",
@@ -118,19 +126,25 @@ Example:
     "Must work offline",
     "Must support mobile and desktop platforms"
   ],
-  "templateName": "comprehensive"
+  "templateName": "comprehensive",
+  "providerId": "openai",
+  "additionalContext": "Focus on enterprise features and security",
+  "providerOptions": {
+    "temperature": 0.5,
+    "maxTokens": 4000
+  }
 }
 ```
 
-#### 2. `validate_prd`
+### `validate_prd`
 
 Validate a PRD document against best practices.
 
-Parameters:
+**Parameters:**
 - `prdContent`: The PRD content to validate
 - `validationRules` (optional): Array of validation rule IDs to check
 
-Example:
+**Example:**
 ```javascript
 {
   "prdContent": "# My Product\n\n## Introduction\n...",
@@ -138,52 +152,209 @@ Example:
 }
 ```
 
-#### 3. `list_validation_rules`
+### `list_validation_rules`
 
 List all available validation rules.
 
-### Available Resources
+### `list_ai_providers`
 
-The server provides access to PRD templates through the following URI pattern:
+List all available AI providers and their availability status.
 
-- `prd://templates/{templateName}`
-
-Available templates:
-- `standard`: A basic PRD template with essential sections
-- `comprehensive`: A detailed PRD template with expanded sections
-
-## Development
-
-### Project Structure
-
+**Example response:**
+```json
+[
+  {
+    "id": "openai",
+    "name": "OpenAI",
+    "available": true
+  },
+  {
+    "id": "anthropic",
+    "name": "Anthropic Claude",
+    "available": false
+  },
+  {
+    "id": "gemini",
+    "name": "Google Gemini",
+    "available": false
+  },
+  {
+    "id": "local",
+    "name": "Local Model",
+    "available": false
+  },
+  {
+    "id": "template",
+    "name": "Template-based (No AI)",
+    "available": true
+  }
+]
 ```
-prd-creator-mcp/
-├── src/
-│   ├── config/            # Configuration management
-│   ├── storage/           # Database and caching
-│   ├── tools/             # Tool implementations
-│   ├── resources/         # Resource implementations
-│   ├── templates/         # Initial PRD templates
-│   └── index.ts           # Main entry point
-├── tests/                 # Test files
-├── dist/                  # Compiled output
-└── README.md              # Documentation
+
+### Template Management
+
+The server provides additional tools for template management:
+
+- `create_template`: Create a new PRD template
+- `list_templates`: List all available templates
+- `get_template`: Get a specific template
+- `update_template`: Update an existing template
+- `delete_template`: Delete a template
+- `export_templates`: Export templates to JSON
+- `import_templates`: Import templates from JSON
+- `render_template`: Render a template with placeholders
+
+### System Management
+
+- `get_provider_config`: Get current provider configuration
+- `update_provider_config`: Update provider configuration
+- `health_check`: Check system health and provider availability
+- `get_logs`: Get recent system logs
+- `stats`: Get usage statistics
+
+## Provider Configuration & Hot Reload
+
+### Configuring AI Providers
+
+You can configure provider credentials and models in two ways:
+- **.env file:** Place a `.env` file in your project or working directory. Use `.env.example` as a template. All standard AI provider variables (e.g., `OPENAI_API_KEY`, `OPENAI_MODEL`, etc.) are supported.
+- **Live protocol tools:** Update provider configuration at runtime using the `update_provider_config` tool via your MCP client. These changes are persisted and take effect immediately—no server restart required.
+
+The server will always merge persistent config (from protocol tools) with environment variables, giving precedence to protocol/tool updates.
+
+### Hot Reload & Automation
+
+When you update provider settings using either method, changes take effect instantly for all new requests. This enables:
+- Seamless automation and scripting via MCP tool interfaces
+- Hassle-free credential rotation and model switching
+- Dynamic environment support for CI/CD and cloud deployments
+
+## Integrations
+
+### Claude Desktop
+
+Add to `claude_desktop_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "prd-creator": {
+      "command": "npx",
+      "args": ["-y", "prd-creator-mcp"]
+    }
+  }
+}
 ```
 
-### Running Tests
+### Glama.ai
+
+Available at: https://glama.ai/mcp/servers/@Saml1211/PRD-MCP-Server
+
+### Cursor
+
+Add to your Cursor MCP client configuration:
+
+```json
+{
+  "mcpServers": {
+    "prd-creator": {
+      "command": "npx",
+      "args": ["-y", "prd-creator-mcp"]
+    }
+  }
+}
+```
+
+### Roo Code
+
+Add to `.roo/mcp.json`:
+
+```json
+{
+  "mcpServers": {
+    "prd-creator-mcp": {
+      "command": "npx",
+      "args": ["-y", "prd-creator-mcp"]
+    }
+  }
+}
+```
+
+### Cline
+
+Reference `prd-creator-mcp` in your MCP workflow definitions.
+
+## CLI Usage
+
+### Install Globally (optional)
+
+You may also install the MCP server globally to expose the CLI:
 
 ```bash
-npm test
+npm install -g prd-creator-mcp
 ```
 
-## License
+Then run:
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+```bash
+prd-creator-mcp
+```
+
+### Command Reference
+
+- `prd-creator-mcp`
+  Runs the MCP server (STDIO transport).
+  Use directly via npx or as a globally installed CLI for integration with MCP clients and tools.
+
+### Uninstall
+
+To remove the global CLI:
+
+```bash
+npm uninstall -g prd-creator-mcp
+```
+
+### CLI Options
+
+View available command line options:
+
+```bash
+npx prd-creator-mcp --help
+```
+
+## Docker
+
+### Building the Docker image
+
+```bash
+docker build -t prd-creator-mcp .
+```
+
+### Running with Docker
+
+```bash
+docker run -i --rm prd-creator-mcp
+```
+
+### With environment variables
+
+```bash
+docker run -i --rm -e OPENAI_API_KEY=your_key_here prd-creator-mcp
+```
 
 ## Contributing
 
-Please read [CONTRIBUTING.md](CONTRIBUTING.md) and [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) before contributing.
+Please read [CONTRIBUTING.md](CONTRIBUTING.md) and [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) before submitting issues or pull requests.
 
----
+## Changelog
 
-Developed by Sam Lyndon
+All notable changes to this project are documented in [CHANGELOG.md](CHANGELOG.md).
+
+## Appendix
+
+### Useful Links
+
+- [GitHub Repository](https://github.com/Saml1211/prd-mcp-server)
+- [Model Context Protocol](https://modelcontextprotocol.io/) - Official MCP specification
+- [MCP Inspector](https://modelcontextprotocol.io/docs/tools/inspector) - Testing and debugging tool for MCP servers
+- [NPM Package](https://www.npmjs.com/package/prd-creator-mcp) - Published npm package

@@ -164,6 +164,7 @@ export async function listTemplates(): Promise<Omit<Template, 'content'>[]> {
   const templates = await db.all<TemplateListRow>(
     `SELECT id, name, description, tags, version, created_at, updated_at
      FROM templates
+     WHERE deleted = 0
      ORDER BY name`
   );
   
@@ -258,5 +259,64 @@ export async function initializeDefaultTemplates() {
 Generated on {{DATE}}`,
       tags: ['default']
     });
+  }
+}
+
+// Add a soft-delete function to mark templates as deleted
+export async function deleteTemplate(id: string): Promise<void> {
+  const db = getPromisifiedDb();
+  await db.run(
+    `UPDATE templates
+     SET deleted = 1,
+         updated_at = CURRENT_TIMESTAMP
+     WHERE id = ?`,
+    [id]
+  );
+}
+
+/**
+ * Export all non-deleted templates to a JSON file
+ * @param filePath Path to write the JSON export
+ */
+export async function exportTemplates(filePath: string): Promise<void> {
+  const db = getPromisifiedDb();
+  // Get all non-deleted template rows
+  const rows = await db.all<TemplateRow>(
+    `SELECT id, name, description, content, tags, version, created_at, updated_at
+     FROM templates
+     WHERE deleted = 0`
+  );
+  // Convert rows to exportable objects
+  const exports = rows.map(row => ({
+    id: row.id,
+    name: row.name,
+    description: row.description || undefined,
+    content: row.content,
+    tags: row.tags ? JSON.parse(row.tags) : [],
+    version: row.version,
+    createdAt: new Date(row.created_at).toISOString(),
+    updatedAt: new Date(row.updated_at).toISOString(),
+  }));
+  await fs.writeFile(filePath, JSON.stringify(exports, null, 2), 'utf-8');
+}
+
+/**
+ * Import templates from a JSON file. Upserts based on name or id.
+ * @param filePath Path to read the JSON import
+ */
+export async function importTemplates(filePath: string): Promise<void> {
+  const db = getPromisifiedDb();
+  const data = await fs.readFile(filePath, 'utf-8');
+  const templates: Array<{ name: string; description?: string; content: string; tags?: string[] }> = JSON.parse(data);
+  for (const t of templates) {
+    try {
+      // Try to find existing by name
+      const existing = await getTemplate(t.name);
+      // Update existing template (does versioning)
+      await updateTemplate(existing.id, { name: t.name, description: t.description, content: t.content, tags: t.tags });
+    } catch {
+      // Not found, create new
+      await saveTemplate({ name: t.name, description: t.description, content: t.content, tags: t.tags });
+    }
   }
 }

@@ -106,8 +106,30 @@ export async function initializeDatabase(): Promise<sqlite3.Database> {
         CREATE INDEX IF NOT EXISTS idx_templates_name ON templates(name);
         CREATE INDEX IF NOT EXISTS idx_template_versions_template_id ON template_versions(template_id);
       `)
-        .then(() => {
+        .then(async () => {
           logger.info('Database schema created successfully');
+          // Migrations: add deleted column to templates table
+          try {
+            await promisifyDb(db).run(
+              'ALTER TABLE templates ADD COLUMN deleted INTEGER NOT NULL DEFAULT 0'
+            );
+            logger.info('Added deleted column to templates table');
+          } catch {
+            logger.info('deleted column already exists in templates table');
+          }
+          // Create validation_rules and metrics tables
+          await promisifyDb(db).exec(`
+            CREATE TABLE IF NOT EXISTS validation_rules (
+              id TEXT PRIMARY KEY,
+              name TEXT NOT NULL,
+              description TEXT,
+              pattern TEXT NOT NULL
+            );
+            CREATE TABLE IF NOT EXISTS metrics (
+              name TEXT PRIMARY KEY,
+              count INTEGER NOT NULL DEFAULT 0
+            );
+          `);
           resolve(db);
         })
         .catch((err) => {
