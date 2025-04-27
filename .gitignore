@@ -29,3 +29,35 @@ Thumbs.db
 
 # Local environment files
 .env
+
+# Local environment override files
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+# Ignore dynamic provider config overrides
+data/provider-config.json
+
+# Cursor Memory Bank
+memory-bank/
+
+# MCP Inspector
+.mcp-inspector/
+
+# MCP Inspector Cache
+.mcp-inspector/cache/
+
+# Generated PRD
+generated-prd.md
+
+# Implementation Plan
+prd-creator-implementation-plan.md
+
+# PRD
+PRD.md
+
+# Sample PRD Output
+generated-prd.md
+
+# Roo Code Project MCP
+.roo/
