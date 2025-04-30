@@ -33,8 +33,16 @@ RUN addgroup -S appgroup \
 
 USER appuser
 
+# Expose default HTTP port (for glama.ai and other remote hosts)
+EXPOSE 3000
+
 # Healthcheck: verify build output exists
 HEALTHCHECK --interval=1m --timeout=10s CMD [ -f /app/dist/index.js ] || exit 1
 
+# Environment variable docs:
+# - PORT or HTTP_PORT: HTTP server port (default 3000)
+# - DB_PATH: Path to SQLite DB file (default: ./data/prd-creator.db)
+# Ensure DB_PATH directory is writable by appuser when overriding
+
 # Entry point
-ENTRYPOINT ["node", "dist/index.js"] 
+ENTRYPOINT ["node", "dist/index.js"]

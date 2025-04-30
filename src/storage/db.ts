@@ -59,27 +59,43 @@ export function promisifyDb(db: sqlite3.Database): DbInterface {
 }
 
 export async function initializeDatabase(): Promise<sqlite3.Database> {
-  const dataDir = path.join(__dirname, '../../data');
-  const dbPath = path.join(dataDir, 'prd-creator.db');
-  
-  logger.info(`Initializing SQLite database at ${dbPath}`);
-  
-  // Ensure data directory exists
-  if (!fs.existsSync(dataDir)) {
-    fs.mkdirSync(dataDir, { recursive: true });
+  // Determine DB path: use env DB_PATH if provided, else default
+  const envDbPath = process.env.DB_PATH;
+  const defaultDir = path.join(__dirname, '../../data');
+  const defaultPath = path.join(defaultDir, 'prd-creator.db');
+  const dbPath = envDbPath ? path.resolve(envDbPath) : defaultPath;
+
+  logger.info(
+    `Initializing SQLite database at ${dbPath} (${envDbPath ? 'from DB_PATH env' : 'default path'})`
+  );
+
+  // Ensure directory for DB exists
+  try {
+    const dbDir = path.dirname(dbPath);
+    if (!fs.existsSync(dbDir)) {
+      fs.mkdirSync(dbDir, { recursive: true });
+      logger.info(`Created database directory: ${dbDir}`);
+    }
+  } catch (err) {
+    logger.error(
+      `Failed to create directory for DB_PATH (${dbPath}): ${err instanceof Error ? err.message : String(err)}`
+    );
+    throw new Error(`Cannot create directory for database at ${dbPath}: ${err instanceof Error ? err.message : String(err)}`);
   }
-  
+
   // Create/open database
   return new Promise((resolve, reject) => {
     db = new sqlite3.Database(dbPath, (err) => {
       if (err) {
-        logger.error(`Error opening database: ${err.message}`);
-        reject(err);
+        logger.error(`Error opening database at ${dbPath}: ${err.message}`);
+        reject(
+          new Error(`Failed to open SQLite DB at ${dbPath}: ${err.message}. Check DB_PATH and permissions.`)
+        );
         return;
       }
-      
+
       const pdb = promisifyDb(db);
-      
+
       // Create tables if they don't exist
       pdb.exec(`
         CREATE TABLE IF NOT EXISTS templates (
